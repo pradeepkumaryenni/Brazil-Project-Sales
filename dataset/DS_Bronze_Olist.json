@@ -1,0 +1,58 @@
+{
+	"name": "DS_Bronze_Olist",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLSGen2_raw",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "Olist",
+				"fileSystem": "bronze"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "customer_id",
+				"type": "UTF8"
+			},
+			{
+				"name": "customer_unique_id",
+				"type": "UTF8"
+			},
+			{
+				"name": "customer_zip_code_prefix",
+				"type": "INT_32"
+			},
+			{
+				"name": "customer_city",
+				"type": "UTF8"
+			},
+			{
+				"name": "customer_state",
+				"type": "UTF8"
+			},
+			{
+				"name": "_bronze_load_timestamp",
+				"type": "INT96"
+			},
+			{
+				"name": "effective_from",
+				"type": "INT96"
+			},
+			{
+				"name": "effective_to",
+				"type": "INT96"
+			},
+			{
+				"name": "is_current",
+				"type": "BOOLEAN"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

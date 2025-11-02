@@ -1,0 +1,9 @@
+{
+	"name": "adf-retail-insights",
+	"location": "eastus2",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "10a3af3b-9f16-4802-b134-61e06ff856ed",
+		"tenantId": "d1738336-f2b2-4641-a282-e37d0bfcb90c"
+	}
+}
