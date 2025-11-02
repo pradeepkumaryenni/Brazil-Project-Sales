@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-retail-insights"
+		},
+		"LS_ADLSGen2_raw_accountKey": {
+			"value": ""
+		},
+		"LS_AzureSQL_MetadataDB_password": {
+			"value": ""
+		},
+		"LS_BlobStorage_landing_connectionString": {
+			"value": ""
+		},
+		"LS_DataBricks_accessToken": {
+			"value": ""
+		},
+		"LS_ADLSGen2_raw_properties_typeProperties_url": {
+			"value": "https://stretailinsights.dfs.core.windows.net/"
+		},
+		"LS_AzureSQL_MetadataDB_properties_typeProperties_server": {
+			"value": "sql-retail-server-2025.database.windows.net"
+		},
+		"LS_AzureSQL_MetadataDB_properties_typeProperties_database": {
+			"value": "sql-retail-metadata"
+		},
+		"LS_AzureSQL_MetadataDB_properties_typeProperties_userName": {
+			"value": "admin43357028"
+		},
+		"LS_DataBricks_properties_typeProperties_existingClusterId": {
+			"value": "1101-111115-eby6p2k9"
+		}
+	}
+}
