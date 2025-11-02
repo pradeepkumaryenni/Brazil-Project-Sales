@@ -31,6 +31,95 @@
 						"type": "ParquetReadSettings"
 					}
 				}
+			},
+			{
+				"name": "ForEach Dataset",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GetMetadata_BronzeFolders",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GetMetadata_BronzeFolders').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Silver_Transform_Notebook",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Users/pradeep.yenni.official@gmail.com/Production/Silver_Transform_Notebook",
+								"baseParameters": {
+									"dataset_name": {
+										"value": "@item().name",
+										"type": "Expression"
+									},
+									"run_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"load_mode": "FULL"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_DataBricks",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Pipeline_Execution_Log_Entry",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Silver_Transform_Notebook",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_AzureSQL_MetadataDB",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "INSERT INTO dbo.Pipeline_Execution_Log \n(\n    PipelineName, \n    RunID, \n    FileName, \n    DatasetName, \n    FileDate, \n    Status, \n    RowsIn, \n    RowsOut, \n    BadRows, \n    ErrorMessage, \n    StartTime, \n    EndTime\n)\nVALUES\n(\n    'PL_Bronze_To_Silver', \n    '@{pipeline().RunId}', \n    'N/A', \n    '@{item().name}', \n    CAST(GETDATE() AS DATE), \n    '@{activity('Silver_Transform_Notebook').output.status}', \n    0, \n    @{coalesce(activity('Silver_Transform_Notebook').output.runOutput.RowsOut, 0)}, \n    0, \n    NULL, \n    '@{pipeline().TriggerTime}', \n    '@{utcNow()}'\n);",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						}
+					]
+				}
 			}
 		],
 		"annotations": [],
