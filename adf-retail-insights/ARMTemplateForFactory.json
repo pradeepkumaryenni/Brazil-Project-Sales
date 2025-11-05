@@ -55,7 +55,7 @@
 			"properties": {
 				"activities": [
 					{
-						"name": "GetMetadata_BronzeFolders",
+						"name": "Get_Metadata_BronzeFolders",
 						"type": "GetMetadata",
 						"dependsOn": [],
 						"policy": {
@@ -68,20 +68,133 @@
 						"userProperties": [],
 						"typeProperties": {
 							"dataset": {
-								"referenceName": "DS_Bronze_Olist",
+								"referenceName": "DS_Bronze_Delta_Olist",
 								"type": "DatasetReference",
-								"parameters": {}
+								"parameters": {
+									"datasetName": "\"\""
+								}
 							},
 							"fieldList": [
 								"childItems"
 							],
 							"storeSettings": {
 								"type": "AzureBlobFSReadSettings",
-								"recursive": true,
 								"enablePartitionDiscovery": false
 							},
 							"formatSettings": {
 								"type": "ParquetReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEach_Bronze_Dataset",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Filter_Bronze_Folders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@coalesce(json(string(activity('Filter_Bronze_Folders').output.Value)), json('[]'))",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Silver_Transform_Notebook",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Users/pradeep.yenni.official@gmail.com/Production/Silver_Transform_Notebook",
+										"baseParameters": {
+											"dataset_name": {
+												"value": "@item().name",
+												"type": "Expression"
+											},
+											"run_id": {
+												"value": "@pipeline().RunId",
+												"type": "Expression"
+											},
+											"load_mode": "FULL"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_DataBricks",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Pipeline_Execution_Log_Entry",
+									"type": "Script",
+									"dependsOn": [
+										{
+											"activity": "Silver_Transform_Notebook",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"linkedServiceName": {
+										"referenceName": "LS_AzureSQL_MetadataDB",
+										"type": "LinkedServiceReference"
+									},
+									"typeProperties": {
+										"scripts": [
+											{
+												"type": "Query",
+												"text": {
+													"value": "INSERT INTO dbo.Pipeline_Execution_Log\n(\n    PipelineName,\n    RunID,\n    DatasetName,\n    FileName,\n    FileDate,\n    Status,\n    RowsIn,\n    RowsOut,\n    BadRows,\n    ErrorMessage,\n    StartTime,\n    EndTime\n)\nVALUES\n(\n    'PL_Bronze_To_Silver',\n    '@{pipeline().RunId}',\n    '@{item().name}',\n    'N/A',\n    CAST(GETDATE() AS DATE),\n    'COMPLETED',\n    0,\n    @{coalesce(activity('Silver_Transform_Notebook').output.runOutput.RowsOut, 0)},\n    0,\n    NULL,\n    '@{pipeline().TriggerTime}',\n    '@{utcNow()}'\n);\n",
+													"type": "Expression"
+												}
+											}
+										],
+										"scriptBlockExecutionTimeout": "02:00:00"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Filter_Bronze_Folders",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Get_Metadata_BronzeFolders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get_Metadata_BronzeFolders').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@startsWith(item().name, 'olist_')",
+								"type": "Expression"
 							}
 						}
 					}
@@ -93,7 +206,9 @@
 				"lastPublishTime": "2025-11-02T18:34:19Z"
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/DS_Bronze_Olist')]"
+				"[concat(variables('factoryId'), '/datasets/DS_Bronze_Delta_Olist')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_DataBricks')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_MetadataDB')]"
 			]
 		},
 		{
@@ -483,68 +598,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/DS_Bronze_Olist')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_ADLSGen2_raw",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "Parquet",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"folderPath": "Olist",
-						"fileSystem": "bronze"
-					},
-					"compressionCodec": "snappy"
-				},
-				"schema": [
-					{
-						"name": "customer_id",
-						"type": "UTF8"
-					},
-					{
-						"name": "customer_unique_id",
-						"type": "UTF8"
-					},
-					{
-						"name": "customer_zip_code_prefix",
-						"type": "INT_32"
-					},
-					{
-						"name": "customer_city",
-						"type": "UTF8"
-					},
-					{
-						"name": "customer_state",
-						"type": "UTF8"
-					},
-					{
-						"name": "_bronze_load_timestamp",
-						"type": "INT96"
-					},
-					{
-						"name": "effective_from",
-						"type": "INT96"
-					},
-					{
-						"name": "effective_to",
-						"type": "INT96"
-					},
-					{
-						"name": "is_current",
-						"type": "BOOLEAN"
-					}
-				]
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_ADLSGen2_raw')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/DS_adls_Archive')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -644,6 +697,49 @@
 				}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_Bronze_Delta_Olist')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLSGen2_raw",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"datasetName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "Olist",
+						"fileSystem": "bronze"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": [
+					{
+						"name": "file_name",
+						"type": "UTF8"
+					},
+					{
+						"name": "run_id",
+						"type": "UTF8"
+					},
+					{
+						"name": "processed_at",
+						"type": "INT96"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADLSGen2_raw')]"
+			]
 		}
 	]
 }
