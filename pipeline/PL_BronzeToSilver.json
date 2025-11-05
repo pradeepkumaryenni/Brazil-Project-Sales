@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "GetMetadata_BronzeFolders",
+				"name": "Get_Metadata_BronzeFolders",
 				"type": "GetMetadata",
 				"dependsOn": [],
 				"policy": {
@@ -16,15 +16,17 @@
 				"userProperties": [],
 				"typeProperties": {
 					"dataset": {
-						"referenceName": "DS_Bronze_Olist",
-						"type": "DatasetReference"
+						"referenceName": "DS_Bronze_Delta_Olist",
+						"type": "DatasetReference",
+						"parameters": {
+							"datasetName": "\"\""
+						}
 					},
 					"fieldList": [
 						"childItems"
 					],
 					"storeSettings": {
 						"type": "AzureBlobFSReadSettings",
-						"recursive": true,
 						"enablePartitionDiscovery": false
 					},
 					"formatSettings": {
@@ -33,11 +35,11 @@
 				}
 			},
 			{
-				"name": "ForEach Dataset",
+				"name": "ForEach_Bronze_Dataset",
 				"type": "ForEach",
 				"dependsOn": [
 					{
-						"activity": "GetMetadata_BronzeFolders",
+						"activity": "Filter_Bronze_Folders",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -46,7 +48,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('GetMetadata_BronzeFolders').output.childItems",
+						"value": "@coalesce(json(string(activity('Filter_Bronze_Folders').output.Value)), json('[]'))",
 						"type": "Expression"
 					},
 					"isSequential": true,
@@ -110,7 +112,7 @@
 									{
 										"type": "Query",
 										"text": {
-											"value": "INSERT INTO dbo.Pipeline_Execution_Log \n(\n    PipelineName, \n    RunID, \n    FileName, \n    DatasetName, \n    FileDate, \n    Status, \n    RowsIn, \n    RowsOut, \n    BadRows, \n    ErrorMessage, \n    StartTime, \n    EndTime\n)\nVALUES\n(\n    'PL_Bronze_To_Silver', \n    '@{pipeline().RunId}', \n    'N/A', \n    '@{item().name}', \n    CAST(GETDATE() AS DATE), \n    '@{activity('Silver_Transform_Notebook').output.status}', \n    0, \n    @{coalesce(activity('Silver_Transform_Notebook').output.runOutput.RowsOut, 0)}, \n    0, \n    NULL, \n    '@{pipeline().TriggerTime}', \n    '@{utcNow()}'\n);",
+											"value": "INSERT INTO dbo.Pipeline_Execution_Log\n(\n    PipelineName,\n    RunID,\n    DatasetName,\n    FileName,\n    FileDate,\n    Status,\n    RowsIn,\n    RowsOut,\n    BadRows,\n    ErrorMessage,\n    StartTime,\n    EndTime\n)\nVALUES\n(\n    'PL_Bronze_To_Silver',\n    '@{pipeline().RunId}',\n    '@{item().name}',\n    'N/A',\n    CAST(GETDATE() AS DATE),\n    'COMPLETED',\n    0,\n    @{coalesce(activity('Silver_Transform_Notebook').output.runOutput.RowsOut, 0)},\n    0,\n    NULL,\n    '@{pipeline().TriggerTime}',\n    '@{utcNow()}'\n);\n",
 											"type": "Expression"
 										}
 									}
@@ -119,6 +121,29 @@
 							}
 						}
 					]
+				}
+			},
+			{
+				"name": "Filter_Bronze_Folders",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Get_Metadata_BronzeFolders",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get_Metadata_BronzeFolders').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@startsWith(item().name, 'olist_')",
+						"type": "Expression"
+					}
 				}
 			}
 		],

@@ -1,0 +1,38 @@
+{
+	"name": "DS_Bronze_Delta_Olist",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLSGen2_raw",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"datasetName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "Olist",
+				"fileSystem": "bronze"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "file_name",
+				"type": "UTF8"
+			},
+			{
+				"name": "run_id",
+				"type": "UTF8"
+			},
+			{
+				"name": "processed_at",
+				"type": "INT96"
+			}
+		]
+	}
+}
