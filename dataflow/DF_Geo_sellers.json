@@ -1,0 +1,91 @@
+{
+	"name": "DF_Geo_sellers",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_sellers_stagging",
+						"type": "DatasetReference"
+					},
+					"name": "sellers"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Staging_geolocation",
+						"type": "DatasetReference"
+					},
+					"name": "geolocation"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Sink_DF_to_bronze",
+						"type": "DatasetReference"
+					},
+					"name": "SinkToBronze"
+				}
+			],
+			"transformations": [
+				{
+					"name": "JoinOnZipcodePrefix"
+				},
+				{
+					"name": "SelectRequiredColumns"
+				},
+				{
+					"name": "LoadTime"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          seller_id as string,",
+				"          seller_zip_code_prefix as string,",
+				"          seller_city as string,",
+				"          seller_state as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sellers",
+				"source(output(",
+				"          geolocation_zip_code_prefix as string,",
+				"          geolocation_lat as string,",
+				"          geolocation_lng as string,",
+				"          geolocation_city as string,",
+				"          geolocation_state as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> geolocation",
+				"sellers, geolocation join(seller_zip_code_prefix == geolocation_zip_code_prefix,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     partitionBy('hash', 1),",
+				"     broadcast: 'auto')~> JoinOnZipcodePrefix",
+				"JoinOnZipcodePrefix select(mapColumn(",
+				"          seller_id,",
+				"          zipcode = geolocation_zip_code_prefix,",
+				"          Latitude = geolocation_lat,",
+				"          Longitude = geolocation_lng,",
+				"          City = geolocation_city,",
+				"          State = geolocation_state",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectRequiredColumns",
+				"SelectRequiredColumns derive(TimeStamp = currentTimestamp()) ~> LoadTime",
+				"LoadTime sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Geolocation_Sellers'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> SinkToBronze"
+			]
+		}
+	}
+}
