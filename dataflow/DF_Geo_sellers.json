@@ -44,6 +44,9 @@
 				},
 				{
 					"name": "FlagLoadTime"
+				},
+				{
+					"name": "alterRow"
 				}
 			],
 			"scriptLines": [
@@ -84,6 +87,7 @@
 				"     skipDuplicateMapOutputs: true) ~> SelectRequiredColumns",
 				"SelectRequiredColumns derive(IsActive = 1,",
 				"          LastUpdated = currentTimestamp()) ~> FlagLoadTime",
+				"FlagLoadTime alterRow(upsertIf(!isNull(SellerID))) ~> alterRow",
 				"FlagLoadTime sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     partitionFileNames:['Geolocation_Sellers'],",
@@ -93,7 +97,7 @@
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     partitionBy('hash', 1)) ~> SinkToBronze",
-				"FlagLoadTime sink(allowSchemaDrift: true,",
+				"alterRow sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          MetadataID as long,",
@@ -105,11 +109,11 @@
 				"          IsActive as boolean,",
 				"          LastUpdated as timestamp",
 				"     ),",
-				"     deletable:false,",
+				"     deletable:true,",
 				"     insertable:true,",
 				"     updateable:true,",
 				"     upsertable:true,",
-				"     keys:['SellerID'],",
+				"     keys:[(SellerID)],",
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
