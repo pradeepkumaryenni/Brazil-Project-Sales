@@ -1,0 +1,55 @@
+{
+	"name": "AzureSqlMetaDataSellers",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AzureSQL_MetadataDB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "MetadataID",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "SellerID",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Latitude",
+				"type": "decimal",
+				"precision": 9,
+				"scale": 6
+			},
+			{
+				"name": "Longitude",
+				"type": "decimal",
+				"precision": 9,
+				"scale": 6
+			},
+			{
+				"name": "City",
+				"type": "nvarchar"
+			},
+			{
+				"name": "State",
+				"type": "nvarchar"
+			},
+			{
+				"name": "IsActive",
+				"type": "bit"
+			},
+			{
+				"name": "LastUpdated",
+				"type": "datetime2",
+				"scale": 7
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Seller_Metadata"
+		}
+	}
+}

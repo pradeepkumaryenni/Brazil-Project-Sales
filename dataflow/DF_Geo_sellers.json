@@ -26,6 +26,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "SinkToBronze"
+				},
+				{
+					"dataset": {
+						"referenceName": "AzureSqlMetaDataSellers",
+						"type": "DatasetReference"
+					},
+					"name": "sinkToMetadata"
 				}
 			],
 			"transformations": [
@@ -36,7 +43,7 @@
 					"name": "SelectRequiredColumns"
 				},
 				{
-					"name": "LoadTime"
+					"name": "FlagLoadTime"
 				}
 			],
 			"scriptLines": [
@@ -66,17 +73,18 @@
 				"     partitionBy('hash', 1),",
 				"     broadcast: 'auto')~> JoinOnZipcodePrefix",
 				"JoinOnZipcodePrefix select(mapColumn(",
-				"          seller_id,",
-				"          zipcode = geolocation_zip_code_prefix,",
+				"          SellerID = seller_id,",
 				"          Latitude = geolocation_lat,",
 				"          Longitude = geolocation_lng,",
 				"          City = geolocation_city,",
-				"          State = geolocation_state",
+				"          State = geolocation_state,",
+				"          Zipcode = geolocation_zip_code_prefix",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> SelectRequiredColumns",
-				"SelectRequiredColumns derive(TimeStamp = currentTimestamp()) ~> LoadTime",
-				"LoadTime sink(allowSchemaDrift: true,",
+				"SelectRequiredColumns derive(IsActive = 1,",
+				"          LastUpdated = currentTimestamp()) ~> FlagLoadTime",
+				"FlagLoadTime sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     partitionFileNames:['Geolocation_Sellers'],",
 				"     umask: 0022,",
@@ -84,7 +92,27 @@
 				"     postCommands: [],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     partitionBy('hash', 1)) ~> SinkToBronze"
+				"     partitionBy('hash', 1)) ~> SinkToBronze",
+				"FlagLoadTime sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          MetadataID as long,",
+				"          SellerID as string,",
+				"          Latitude as decimal(9,6),",
+				"          Longitude as decimal(9,6),",
+				"          City as string,",
+				"          State as string,",
+				"          IsActive as boolean,",
+				"          LastUpdated as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkToMetadata"
 			]
 		}
 	}
