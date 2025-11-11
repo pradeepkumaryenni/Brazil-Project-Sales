@@ -82,6 +82,42 @@
 					"referenceName": "LS_AzureSQL_MetadataDB",
 					"type": "LinkedServiceReference"
 				}
+			},
+			{
+				"name": "Pipeline_execution_logging",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "SP_Merge_SellerMetadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSQL_MetadataDB",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "INSERT INTO dbo.Pipeline_Execution_Log \n(\n    PipelineName, \n    RunID, \n    FileName, \n    DatasetName, \n    FileDate, \n    Status, \n    StartTime, \n    EndTime, \n    RowsIn, \n    RowsOut, \n    BadRows, \n    ErrorMessage\n)\nVALUES\n(\n    'PL_SellerMetadata_To_SQL', \n    '@{pipeline().RunId}', \n    'Seller_Metadata_Stage', \n    'Seller_Metadata', \n    CAST(GETDATE() AS DATE), \n    'COMPLETED', \n    '@{pipeline().TriggerTime}', \n    '@{utcNow()}', \n    0, \n    0, \n    0, \n    NULL\n);",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
 			}
 		],
 		"annotations": []
