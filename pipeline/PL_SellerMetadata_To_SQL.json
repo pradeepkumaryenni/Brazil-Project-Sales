@@ -51,7 +51,7 @@
 				],
 				"outputs": [
 					{
-						"referenceName": "AzureSqlMetaDataSellers",
+						"referenceName": "AzureSqlTable_Sellers_Meta_Data_Staging",
 						"type": "DatasetReference"
 					}
 				]
