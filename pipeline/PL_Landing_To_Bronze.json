@@ -251,7 +251,7 @@
 					{
 						"activity": "DF_Join_Sellers_Geolocation",
 						"dependencyConditions": [
-							"Succeeded"
+							"Completed"
 						]
 					}
 				],
@@ -313,6 +313,29 @@
 						"computeType": "General"
 					},
 					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Run_SellerMetadata_To_SQL",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "DF_Join_Sellers_Geolocation",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_SellerMetadata_To_SQL",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": false
 				}
 			}
 		],
