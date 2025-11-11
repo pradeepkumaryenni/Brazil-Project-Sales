@@ -26,13 +26,6 @@
 						"type": "DatasetReference"
 					},
 					"name": "SinkToBronze"
-				},
-				{
-					"dataset": {
-						"referenceName": "AzureSqlMetaDataSellers",
-						"type": "DatasetReference"
-					},
-					"name": "sinkToMetadata"
 				}
 			],
 			"transformations": [
@@ -44,9 +37,6 @@
 				},
 				{
 					"name": "FlagLoadTime"
-				},
-				{
-					"name": "alterRow"
 				}
 			],
 			"scriptLines": [
@@ -87,7 +77,6 @@
 				"     skipDuplicateMapOutputs: true) ~> SelectRequiredColumns",
 				"SelectRequiredColumns derive(IsActive = 1,",
 				"          LastUpdated = currentTimestamp()) ~> FlagLoadTime",
-				"FlagLoadTime alterRow(upsertIf(!isNull(SellerID))) ~> alterRow",
 				"FlagLoadTime sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     partitionFileNames:['Geolocation_Sellers'],",
@@ -96,28 +85,7 @@
 				"     postCommands: [],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     partitionBy('hash', 1)) ~> SinkToBronze",
-				"alterRow sink(allowSchemaDrift: true,",
-				"     validateSchema: false,",
-				"     input(",
-				"          MetadataID as long,",
-				"          SellerID as string,",
-				"          Latitude as decimal(9,6),",
-				"          Longitude as decimal(9,6),",
-				"          City as string,",
-				"          State as string,",
-				"          IsActive as boolean,",
-				"          LastUpdated as timestamp",
-				"     ),",
-				"     deletable:true,",
-				"     insertable:true,",
-				"     updateable:true,",
-				"     upsertable:true,",
-				"     keys:[(SellerID)],",
-				"     format: 'table',",
-				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> sinkToMetadata"
+				"     partitionBy('hash', 1)) ~> SinkToBronze"
 			]
 		}
 	}
