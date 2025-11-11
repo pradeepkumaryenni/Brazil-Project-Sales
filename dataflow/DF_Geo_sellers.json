@@ -37,6 +37,9 @@
 				},
 				{
 					"name": "FlagLoadTime"
+				},
+				{
+					"name": "castToBoolean"
 				}
 			],
 			"scriptLines": [
@@ -77,7 +80,11 @@
 				"     skipDuplicateMapOutputs: true) ~> SelectRequiredColumns",
 				"SelectRequiredColumns derive(IsActive = 1,",
 				"          LastUpdated = currentTimestamp()) ~> FlagLoadTime",
-				"FlagLoadTime sink(allowSchemaDrift: true,",
+				"FlagLoadTime cast(output(",
+				"          IsActive as boolean",
+				"     ),",
+				"     errors: true) ~> castToBoolean",
+				"castToBoolean sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     partitionFileNames:['Geolocation_Sellers'],",
 				"     umask: 0222,",
