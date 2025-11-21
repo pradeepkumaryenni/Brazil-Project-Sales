@@ -1,0 +1,156 @@
+{
+	"name": "PL_GetWeather_Web",
+	"properties": {
+		"activities": [
+			{
+				"name": "GetTotalCount",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT COUNT(1) AS total_count\nFROM dbo.Store_Metadata\nWHERE IsActive = 1\n  AND Latitude IS NOT NULL\n  AND Longitude IS NOT NULL;\n",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlMetaDataSellers",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Set_total_count",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "GetTotalCount",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "total_count",
+					"value": {
+						"value": "@int(activity('GetTotalCount').output.firstRow.total_count)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Set_page_count",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Set_total_count",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "page_count",
+					"value": {
+						"value": "@int(div(add(variables('total_count'), sub(pipeline().parameters.page_size, 1)), pipeline().parameters.page_size))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Set_pagesArray",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Set_page_count",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pagesArray",
+					"value": {
+						"value": "@range(0, variables('page_count'))",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"run_id": {
+				"type": "string",
+				"defaultValue": "@pipeline().RunId"
+			},
+			"ingest_date": {
+				"type": "string",
+				"defaultValue": "@utcNow('yyyy-MM-dd')"
+			},
+			"page_size": {
+				"type": "int",
+				"defaultValue": 500
+			},
+			"page_batch_concurrency": {
+				"type": "int",
+				"defaultValue": 4
+			},
+			"row_concurrency": {
+				"type": "int",
+				"defaultValue": 8
+			},
+			"provider": {
+				"type": "string",
+				"defaultValue": "openweather"
+			}
+		},
+		"variables": {
+			"total_count": {
+				"type": "Integer"
+			},
+			"page_count": {
+				"type": "Integer"
+			},
+			"pagesArray": {
+				"type": "Array"
+			},
+			"openweather_key": {
+				"type": "String"
+			},
+			"files_written_total": {
+				"type": "Integer",
+				"defaultValue": 0
+			},
+			"errors_total": {
+				"type": "Integer",
+				"defaultValue": 0
+			}
+		},
+		"annotations": []
+	}
+}
