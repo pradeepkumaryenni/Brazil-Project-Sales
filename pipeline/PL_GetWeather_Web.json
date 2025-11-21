@@ -101,6 +101,30 @@
 						"type": "Expression"
 					}
 				}
+			},
+			{
+				"name": "Set_openweather_key",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Set_pagesArray",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "openweather_key",
+					"value": {
+						"value": "19a47505436e5f347aacf5d6d7e4b60c",
+						"type": "Expression"
+					}
+				}
 			}
 		],
 		"parameters": {
@@ -140,7 +164,8 @@
 				"type": "Array"
 			},
 			"openweather_key": {
-				"type": "String"
+				"type": "String",
+				"defaultValue": "19a47505436e5f347aacf5d6d7e4b60c"
 			},
 			"files_written_total": {
 				"type": "Integer",
