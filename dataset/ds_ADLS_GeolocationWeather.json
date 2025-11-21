@@ -1,0 +1,33 @@
+{
+	"name": "ds_ADLS_GeolocationWeather",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_Bronze",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"seller_id": {
+				"type": "string"
+			},
+			"ingest_date": {
+				"type": "string"
+			},
+			"file_suffix": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "weather@{dataset().file_suffix}",
+				"folderPath": {
+					"value": "geolocation_weather/@{dataset().ingest_date}/seller=@{dataset().seller_id}\n",
+					"type": "Expression"
+				},
+				"fileSystem": "bronze"
+			}
+		}
+	}
+}
