@@ -1,0 +1,13 @@
+{
+	"name": "LS_REST_Base",
+	"properties": {
+		"description": "Base REST linked service for OpenWeather API (base URL only)",
+		"annotations": [],
+		"type": "RestService",
+		"typeProperties": {
+			"url": "https://api.openweathermap.org",
+			"enableServerCertificateValidation": true,
+			"authenticationType": "Anonymous"
+		}
+	}
+}
