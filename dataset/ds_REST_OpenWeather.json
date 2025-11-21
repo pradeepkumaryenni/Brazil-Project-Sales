@@ -1,0 +1,23 @@
+{
+	"name": "ds_REST_OpenWeather",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_REST_Base",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"request_url": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@dataset().request_url",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	}
+}
