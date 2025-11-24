@@ -127,7 +127,7 @@
 				}
 			},
 			{
-				"name": "ForEach1",
+				"name": "ForEach_Page",
 				"type": "ForEach",
 				"dependsOn": [
 					{
@@ -139,9 +139,13 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
+					"items": {
+						"value": "@variables('pagesArray')",
+						"type": "Expression"
+					},
 					"activities": [
 						{
-							"name": "Lookup1",
+							"name": "Lookup_PageRows",
 							"type": "Lookup",
 							"dependsOn": [],
 							"policy": {
@@ -151,7 +155,27 @@
 								"secureOutput": false,
 								"secureInput": false
 							},
-							"userProperties": []
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderStoredProcedureName": "[dbo].[usp_GetSellersPage]",
+									"storedProcedureParameters": {
+										"PageIndex": {
+											"type": "Int32"
+										},
+										"PageSize": {
+											"type": "Int32"
+										}
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "AzureSqlMetaDataSellers",
+									"type": "DatasetReference"
+								}
+							}
 						}
 					]
 				}
