@@ -1,0 +1,199 @@
+{
+	"name": "PL_ProcessPage",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup_PageRows",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[usp_GetSellersPage]",
+						"storedProcedureParameters": {
+							"PageIndex": {
+								"type": "Int32"
+							},
+							"PageSize": {
+								"type": "Int32"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlMetaDataSellers",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "ForEach_Row",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup_PageRows",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup_PageRows').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy_REST_To_ADLS",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 3,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RestSource",
+									"httpRequestTimeout": "00:01:40",
+									"requestInterval": "00.00:00:00.010",
+									"requestMethod": "GET",
+									"paginationRules": {
+										"supportRFC5988": "true"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_REST_OpenWeather",
+									"type": "DatasetReference",
+									"parameters": {
+										"request_url": {
+											"value": "@concat('/data/2.5/weather?lat=', item().Latitude,\n        '&lon=', item().Longitude,\n        '&appid=', pipeline().parameters.openweather_key,\n        '&units=metric')\n",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_ADLS_GeolocationWeather",
+									"type": "DatasetReference",
+									"parameters": {
+										"seller_id": {
+											"value": "@item().SellerID",
+											"type": "Expression"
+										},
+										"ingest_date": {
+											"value": "@pipeline().parameters.ingest_date",
+											"type": "Expression"
+										},
+										"file_suffix": {
+											"value": "@concat('_', pipeline().parameters.run_id, '_', utcNow('yyyyMMddHHmmss'), '.json')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "usp_LogPipelinePageRun",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "ForEach_Row",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_LogPipelinePageRun]",
+					"storedProcedureParameters": {
+						"EndTime": {
+							"value": "",
+							"type": "DateTime"
+						},
+						"Errors": {
+							"value": "",
+							"type": "Int32"
+						},
+						"FilesWritten": {
+							"value": "",
+							"type": "Int32"
+						},
+						"PageIndex": {
+							"value": "",
+							"type": "Int32"
+						},
+						"PipelineName": {
+							"value": "",
+							"type": "String"
+						},
+						"RunID": {
+							"value": "",
+							"type": "Guid"
+						},
+						"StartTime": {
+							"value": "",
+							"type": "DateTime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSQL_MetadataDB",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"page_index": {
+				"type": "int"
+			},
+			"row_concurrency": {
+				"type": "int"
+			},
+			"run_id": {
+				"type": "string"
+			},
+			"ingest_date": {
+				"type": "string"
+			},
+			"openweather_key": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}
