@@ -205,7 +205,29 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"storedProcedureName": "[dbo].[usp_LogPipelineRun]"
+					"storedProcedureName": "[dbo].[usp_LogPipelineRun]",
+					"storedProcedureParameters": {
+						"Errors": {
+							"value": "",
+							"type": "Int32"
+						},
+						"FilesWritten": {
+							"value": "",
+							"type": "Int32"
+						},
+						"PipelineName": {
+							"value": "",
+							"type": "String"
+						},
+						"RunID": {
+							"value": "",
+							"type": "Guid"
+						},
+						"Status": {
+							"value": "",
+							"type": "String"
+						}
+					}
 				},
 				"linkedServiceName": {
 					"referenceName": "LS_AzureSQL_MetadataDB",
