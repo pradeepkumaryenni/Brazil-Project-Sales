@@ -145,39 +145,71 @@
 					},
 					"activities": [
 						{
-							"name": "Lookup_PageRows",
-							"type": "Lookup",
+							"name": "Execute Pipeline",
+							"type": "ExecutePipeline",
 							"dependsOn": [],
 							"policy": {
-								"timeout": "0.12:00:00",
-								"retry": 0,
-								"retryIntervalInSeconds": 30,
-								"secureOutput": false,
 								"secureInput": false
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"source": {
-									"type": "AzureSqlSource",
-									"sqlReaderStoredProcedureName": "[dbo].[usp_GetSellersPage]",
-									"storedProcedureParameters": {
-										"PageIndex": {
-											"type": "Int32"
-										},
-										"PageSize": {
-											"type": "Int32"
-										}
-									},
-									"queryTimeout": "02:00:00",
-									"partitionOption": "None"
+								"pipeline": {
+									"referenceName": "PL_ProcessPage",
+									"type": "PipelineReference"
 								},
-								"dataset": {
-									"referenceName": "AzureSqlMetaDataSellers",
-									"type": "DatasetReference"
+								"waitOnCompletion": true,
+								"parameters": {
+									"page_index": {
+										"value": "@item()",
+										"type": "Expression"
+									},
+									"row_concurrency": {
+										"value": "@pipeline().parameters.row_concurrency",
+										"type": "Expression"
+									},
+									"run_id": {
+										"value": "@pipeline().parameters.run_id",
+										"type": "Expression"
+									},
+									"ingest_date": {
+										"value": "@pipeline().parameters.ingest_date",
+										"type": "Expression"
+									},
+									"openweather_key": {
+										"value": "@variables('openweather_key')",
+										"type": "Expression"
+									}
 								}
 							}
 						}
 					]
+				}
+			},
+			{
+				"name": "usp_LogPipelineRun",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "ForEach_Page",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_LogPipelineRun]"
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSQL_MetadataDB",
+					"type": "LinkedServiceReference"
 				}
 			}
 		],
